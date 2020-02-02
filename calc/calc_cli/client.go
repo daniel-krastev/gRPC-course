@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	calcpb "grpc-course/calc/calc_proto"
 	"io"
 	"math"
@@ -10,6 +11,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func init() {
@@ -31,7 +34,44 @@ func main() {
 	// doUnaryCall(c)
 	// doServerStreamCall(c)
 	// doClientStreamCall(c)
-	doBiDirStreamCall(c)
+	// doBiDirStreamCall(c)
+	doErrorUnary(c)
+}
+
+func doErrorUnary(c calcpb.CalculatorClient) {
+	log.Info("Calling calc unary error with a positive number...")
+	resp, err := c.SquareRoot(context.Background(), &calcpb.SquareRootRequest{Number: 225})
+	if err != nil {
+		responseError, ok := status.FromError(err)
+		if ok {
+			// actual error form grpc (user error)
+			fmt.Println(responseError.Message())
+			fmt.Println(responseError.Code())
+			if responseError.Code() == codes.InvalidArgument {
+				fmt.Println("We have probably sent a negative number!")
+			}
+		} else {
+			log.Fatalf("Big error calling squareroot: %v", err)
+		}
+	}
+	log.Infof("Response from calc unary: %s", resp)
+
+	log.Info("Calling calc unary error with a negative number...")
+	respTwo, err := c.SquareRoot(context.Background(), &calcpb.SquareRootRequest{Number: -12})
+	if err != nil {
+		responseError, ok := status.FromError(err)
+		if ok {
+			// actual error form grpc (user error)
+			fmt.Println(responseError.Message())
+			fmt.Println(responseError.Code())
+			if responseError.Code() == codes.InvalidArgument {
+				fmt.Println("We have probably sent a negative number!")
+			}
+		} else {
+			log.Fatalf("Big error calling squareroot: %v", err)
+		}
+	}
+	log.Infof("Response from calc unary: %s", respTwo)
 }
 
 func doUnaryCall(c calcpb.CalculatorClient) {

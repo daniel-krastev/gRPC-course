@@ -4,56 +4,55 @@ package calc;
 
 import "google/api/annotations.proto";
 
-option go_package="calcpb";
+option go_package = "calcpb";
 
-service Calculator{
-    // Unary
-    rpc CalculateSum (CalculateSumRequest) returns (CalculateSumResponse){
-        option (google.api.http) = {
-            post: "/v1/calc"
-            body: "*"
-          };
+service Calculator {
+  // Unary
+  rpc CalculateSum(CalculateSumRequest) returns (CalculateSumResponse) {
+    option (google.api.http) = {
+      post : "/v1/calc"
+      body : "*"
     };
+  };
 
-    // Server stream
-    rpc PrimeDecompose (PrimeDecomposeRequest) returns (stream PrimeDecomposeResponse){};
+  // Server stream
+  rpc PrimeDecompose(PrimeDecomposeRequest)
+      returns (stream PrimeDecomposeResponse) {};
 
-    // Client stream
-    rpc CalculateAverage (stream CalculateAverageRequest) returns (CalculateAverageResponse){};
+  // Client stream
+  rpc CalculateAverage(stream CalculateAverageRequest)
+      returns (CalculateAverageResponse) {};
 
-    // Bi-directional stream
-    rpc FindMax (stream FindMaxRequest) returns (stream FindMaxResponse) {};
+  // Bi-directional stream
+  rpc FindMax(stream FindMaxRequest) returns (stream FindMaxResponse) {};
+
+  // Calculates the square root of a given number.
+  //
+  // error handling
+  // This RPC will throw INVALID_ARGUMENT if the number in the request is
+  // negative.
+  rpc SquareRoot(SquareRootRequest) returns (SquareRootResponse) {};
 }
 
-message FindMaxRequest {
-    int64 number = 1;
-}
+message FindMaxRequest { int64 number = 1; }
 
-message FindMaxResponse {
-    int64 number = 1;
-}
+message FindMaxResponse { int64 number = 1; }
 
-message CalculateAverageRequest {
-    double number = 1;
-}
+message CalculateAverageRequest { double number = 1; }
 
-message CalculateAverageResponse {
-    double average = 1;
-}
+message CalculateAverageResponse { double average = 1; }
 
 message CalculateSumRequest {
-    int64 x = 1;
-    int64 y = 2;
+  int64 x = 1;
+  int64 y = 2;
 }
 
-message CalculateSumResponse {
-    int64 result = 1;
-}
+message CalculateSumResponse { int64 result = 1; }
 
-message PrimeDecomposeRequest {
-    int64 number = 1;
-}
+message PrimeDecomposeRequest { int64 number = 1; }
 
-message PrimeDecomposeResponse {
-    int64 number = 1;
-}
+message PrimeDecomposeResponse { int64 number = 1; }
+
+message SquareRootRequest { int64 number = 1;}
+
+message SquareRootResponse { double result = 1;}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"math"
 	"net"
@@ -9,6 +10,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	calcpb "grpc-course/calc/calc_proto"
 )
@@ -88,6 +91,19 @@ func (*server) FindMax(stream calcpb.Calculator_FindMaxServer) error {
 			}
 		}
 	}
+}
+
+func (*server) SquareRoot(ctx context.Context, req *calcpb.SquareRootRequest) (*calcpb.SquareRootResponse, error) {
+	number := req.GetNumber()
+	if number < 0 {
+		return nil, status.Errorf(
+			codes.InvalidArgument,
+			fmt.Sprintf("Received negative number %v", number),
+		)
+	}
+	return &calcpb.SquareRootResponse{
+		Result: math.Sqrt(float64(number)),
+	}, nil
 }
 
 func main() {
