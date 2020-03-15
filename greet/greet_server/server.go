@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net"
 	"os"
@@ -12,6 +13,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/status"
 )
 
 func init() {
@@ -20,6 +24,26 @@ func init() {
 }
 
 type server struct{}
+
+func (*server) GreetWithDeadline(ctx context.Context, req *greetpb.GreetWithDeadlineRequest) (*greetpb.GreetWithDeadlineResponse, error) {
+	log.Infof("Processing unary request: %v", req)
+	for i := 0; i < 3; i++ {
+		if ctx.Err() == context.Canceled {
+			return nil, status.Error(
+				codes.DeadlineExceeded,
+				fmt.Sprintf("The client cancelled the request: %v\n", req.GetGreeting()),
+			)
+		}
+		time.Sleep(time.Second)
+	}
+	firstName := req.Greeting.FirstName
+	lastName := req.Greeting.LastName
+	result := "Hello " + firstName + " " + lastName
+
+	return &greetpb.GreetWithDeadlineResponse{
+		Result: result,
+	}, nil
+}
 
 func (*server) Greet(ctx context.Context, req *greetpb.GreetRequest) (*greetpb.GreetResponse, error) {
 	log.Infof("Processing unary request: %v", req)
@@ -102,7 +126,20 @@ func main() {
 		log.Fatalf("error listening: %v", err)
 	}
 
-	s := grpc.NewServer()
+	tls := false
+	var opts []grpc.ServerOption
+	if tls {
+		certFile := "ssl/server.crt"
+		keyFile := "ssl/server.pem"
+		creds, sslError := credentials.NewServerTLSFromFile(certFile, keyFile)
+		if sslError != nil {
+			log.Fatalf("Fail loading certificates: %v", sslError)
+			return
+		}
+	
+		opts = append(opts, grpc.Creds(creds))
+	}
+	s := grpc.NewServer(opts...)
 
 	greetpb.RegisterGreetServiceServer(s, &server{})
 

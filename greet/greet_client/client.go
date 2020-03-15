@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"time"
@@ -10,6 +11,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/status"
 )
 
 func init() {
@@ -20,7 +24,20 @@ func init() {
 func main() {
 	log.Infof("Setting up client...")
 
-	cc, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+	tls := false
+	opts := grpc.WithInsecure()
+	if tls {
+		certFile := "ssl/ca.crt" // Certificate authority trust certificate
+		creds, sslError := credentials.NewClientTLSFromFile(certFile, "")
+		if sslError != nil {
+			log.Fatalf("Fail while loading ca trust certificates: %v", sslError)
+			return
+		}
+
+		opts = grpc.WithTransportCredentials(creds)
+	}
+
+	cc, err := grpc.Dial("localhost:50051", opts)
 	if err != nil {
 		log.Fatalf("Error dialing: %s", err)
 	}
@@ -28,13 +45,43 @@ func main() {
 
 	c := greetpb.NewGreetServiceClient(cc)
 
-	// doUnaryCall(c)
+	doUnaryCall(c)
 
 	// doServerStreamCall(c)
 
 	// doClientStreamCall(c)
 
-	doBiDiStreaming(c)
+	// doBiDiStreaming(c)
+
+	// doUnaryWithDeadline(c, time.Second*2)
+
+	// doUnaryWithDeadline(c, time.Second*5)
+}
+
+func doUnaryWithDeadline(c greetpb.GreetServiceClient, timeout time.Duration) {
+	log.Info("Calling greet server unary call with a deadline...")
+	req := &greetpb.GreetWithDeadlineRequest{
+		Greeting: &greetpb.Greeting{
+			FirstName: "Daniel",
+			LastName:  "Krastev",
+		},
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	resp, err := c.GreetWithDeadline(ctx, req)
+	if err != nil {
+		statusErr, ok := status.FromError(err)
+		if ok {
+			if statusErr.Code() == codes.DeadlineExceeded {
+				fmt.Printf("Exceeded deadline for a call to greet with deadline with %v sec\n", timeout.Seconds())
+			} else {
+				fmt.Printf("Unexpected grpc error: %v\n", statusErr)
+			}
+			return
+		}
+		log.Fatalf("Error while calling greet unary service: %v", err)
+	}
+	log.Infof("Response from greet unary call: %s", resp)
 }
 
 func doUnaryCall(c greetpb.GreetServiceClient) {

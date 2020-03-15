@@ -11,6 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 
 	calcpb "grpc-course/calc/calc_proto"
@@ -117,6 +118,9 @@ func main() {
 	s := grpc.NewServer()
 
 	calcpb.RegisterCalculatorServer(s, &server{})
+
+	// Register reflection service
+	reflection.Register(s)
 
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("error serving: %v", err)
