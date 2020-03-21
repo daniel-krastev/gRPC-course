@@ -23,7 +23,7 @@ func init() {
 func main() {
 	log.Infof("Setting up client...")
 
-	cc, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+	cc, err := grpc.Dial("localhost:80", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("Error dialing: %s", err)
 	}
@@ -31,10 +31,10 @@ func main() {
 
 	c := calcpb.NewCalculatorClient(cc)
 
-	// doUnaryCall(c)
-	// doServerStreamCall(c)
-	// doClientStreamCall(c)
-	// doBiDirStreamCall(c)
+	doUnaryCall(c)
+	doServerStreamCall(c)
+	doClientStreamCall(c)
+	doBiDirStreamCall(c)
 	doErrorUnary(c)
 }
 
