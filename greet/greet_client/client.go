@@ -2,14 +2,18 @@ package main
 
 import (
 	"context"
+	"strings"
 	"fmt"
 	"io"
 	"os"
 	"time"
+	"reflect"
+	"runtime"
 
 	greetpb "grpc-course/greet/greet_pb"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/golang/protobuf/descriptor"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -43,9 +47,49 @@ func main() {
 	}
 	defer cc.Close()
 
-	c := greetpb.NewGreetServiceClient(cc)
+	in := greetpb.GreetServiceServer.Greet
+	respType := reflect.TypeOf(in).Out(0).Elem()
+	resp := reflect.New(respType).Interface()
+	
+	fd, _ := descriptor.ForMessage(resp.(descriptor.Message))
+	serviceName := fd.GetService()[0].GetName()
+	fmt.Printf("%v\n", serviceName)
+	packageName := fd.GetPackage()
+	fmt.Printf("%v\n", packageName)
+	
+	methodName := nameOf(in)
+	fmt.Printf("%v\n", methodName)
+	// packageName = ""
+	var method string
+	if packageName != "" {
+		method = fmt.Sprintf("/%s.%s/%s", packageName, serviceName, methodName)
+	} else {
+		method = fmt.Sprintf("/%s/%s", serviceName, methodName)
+	}
+	fmt.Printf("method: %s\n", method)
 
-	doUnaryCall(c)
+
+	req := &greetpb.GreetRequest{
+		Greeting: &greetpb.Greeting{
+			FirstName: "Dara",
+			LastName:  "Paunova",
+		},
+	}
+	err = cc.Invoke(
+		context.Background(),
+		method,
+		req,
+		resp,
+	)
+
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+	}
+	fmt.Printf("String: %v\n", resp)
+
+	// c := greetpb.NewGreetServiceClient(cc)
+
+	// doUnaryCall(c)
 
 	// doServerStreamCall(c)
 
@@ -57,6 +101,18 @@ func main() {
 
 	// doUnaryWithDeadline(c, time.Second*5)
 }
+
+func nameOf(f interface{}) string {
+	v := reflect.ValueOf(f)
+	if v.Kind() == reflect.Func {
+		if rf := runtime.FuncForPC(v.Pointer()); rf != nil {
+			funcNameArr := strings.Split(rf.Name(), ".")
+			return funcNameArr[len(funcNameArr) - 1]
+		}
+	}
+	return ""
+}
+
 
 func doUnaryWithDeadline(c greetpb.GreetServiceClient, timeout time.Duration) {
 	log.Info("Calling greet server unary call with a deadline...")

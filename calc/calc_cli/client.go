@@ -23,7 +23,7 @@ func init() {
 func main() {
 	log.Infof("Setting up client...")
 
-	cc, err := grpc.Dial("localhost:80", grpc.WithInsecure())
+	cc, err := grpc.Dial("127.0.0.1:80", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("Error dialing: %s", err)
 	}
