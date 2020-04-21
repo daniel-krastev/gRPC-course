@@ -110,7 +110,7 @@ func (*server) SquareRoot(ctx context.Context, req *calcpb.SquareRootRequest) (*
 func main() {
 	log.Info("Setting up server...")
 
-	lis, err := net.Listen("tcp", "0.0.0.0:50051")
+	lis, err := net.Listen("tcp", "localhost:50051")
 	if err != nil {
 		log.Fatalf("error listening: %v", err)
 	}

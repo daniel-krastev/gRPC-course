@@ -2,19 +2,21 @@ version: '3.0'
 
 services:
 
-  # (TODO) setup grpc reverse proxy with nginx
-  # proxy:
-  #   image: proxy
-  #   build:
-  #     context: .
-  #     dockerfile: reverse.Dockerfile
-  #   ports:
-  #     - "80:50051"
+  nginx-reverse-proxy:
+    image: nginx:1.17.10
+    container_name: proxy
+    ports:
+      - "80:8080"
+    restart: always
+    volumes:
+      - /home/daniel/go/src/grpc-course/calc/nginx.conf:/etc/nginx/nginx.conf
 
   grpc-go-calc-server:
     image: grpc-go-calc-server
+    container_name: grpc-server
     build:
       context: .
       dockerfile: calcServ.Dockerfile
-    ports:
-    - "80:50051"
+    depends_on: 
+      - nginx-reverse-proxy
+    restart: always
